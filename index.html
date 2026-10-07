@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#231D14">
+  <title>Ex Libris</title>
+
+  <!-- L'application installable : sa carte d'identité et son icône -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icones/icone-192.png">
+  <link rel="apple-touch-icon" href="icones/icone-192.png">
+
+  <!-- Les polices : EB Garamond (titres), News Cycle (petits textes), Cutive (tâches et notes) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cutive&family=News+Cycle:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-jour">
+
+  <!-- ========== L'ÉCRAN D'OUVERTURE (l'ex-libris) ========== -->
+  <!-- Elle reste affichée jusqu'à ce qu'on touche l'écran : la page se tourne alors comme celle d'un livre -->
+  <div id="ouverture" role="button" tabindex="0" aria-label="Ouvrir le carnet">
+    <div class="etiquette-exlibris page">
+      <div class="double-cadre"></div>
+      <div class="chandelle-dessin" aria-hidden="true"><span class="cire"></span><span class="flamme"></span></div>
+      <p class="ex">EX</p>
+      <p class="libris">Libris</p>
+      <div class="filet"></div>
+      <p class="sous-titre">carnet d'heures et de lectures</p>
+      <div class="soleil" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 30 30"><circle cx="15" cy="15" r="6" fill="none" stroke="currentColor"/><circle cx="15" cy="15" r="3" fill="currentColor"/><path d="M15 2 L16.2 8 L13.8 8 Z M15 28 L13.8 22 L16.2 22 Z M2 15 L8 13.8 L8 16.2 Z M28 15 L22 16.2 L22 13.8 Z" fill="currentColor"/></svg>
+      </div>
+      <p class="devise">Audaces fortuna iuvat</p>
+      <div class="filet-point"><i></i><b></b><i></i></div>
+    </div>
+    <p class="invitation">touchez pour ouvrir le carnet</p>
+  </div>
+
+  <!-- ========== LE CONTENU : chaque volet s'affiche ici ========== -->
+  <main id="contenu"></main>
+
+  <!-- ========== LA BARRE DE NAVIGATION ========== -->
+  <nav id="navigation">
+    <button data-volet="aujourdhui">Aujourd'hui</button>
+    <button data-volet="calendrier">Calendrier</button>
+    <button data-volet="taches">Tâches</button>
+    <button data-volet="bibliotheque">Bibliothèque</button>
+    <button data-volet="notes">Notes</button>
+  </nav>
+
+  <!-- Les fenêtres qui s'ouvrent par-dessus (fiches, formulaires, questions) -->
+  <div id="fenetres"></div>
+
+  <!-- Le lecteur de livres, en plein écran -->
+  <div id="lecteur" hidden></div>
+
+  <!-- Les petits messages temporaires -->
+  <div id="messages"></div>
+
+  <!-- Le grain du papier, dessiné une seule fois et réutilisé partout -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="filtre-grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3"/></filter>
+  </svg>
+
+  <!-- ========== LE CODE, découpé en fichiers ========== -->
+  <script src="js/outils.js"></script>
+  <script src="js/donnees.js"></script>
+  <script src="js/fenetres.js"></script>
+  <script src="js/rendezvous.js"></script>
+  <script src="js/calendrier.js"></script>
+  <script src="js/taches.js"></script>
+  <script src="js/notes.js"></script>
+  <script src="js/aujourdhui.js"></script>
+  <script src="js/bibliotheque.js"></script>
+  <script src="js/lecteur.js"></script>
+  <script src="js/rappels.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,984 @@
+/* =====================================================================
+   EX LIBRIS — la feuille de style
+   Organisation : 1. couleurs  2. page et papier  3. navigation
+   4. éléments communs  5. calendrier  6. tâches  7. notes
+   8. bibliothèque  9. lecteur  10. ouverture et messages
+   ===================================================================== */
+
+
+/* ========== 1. LES COULEURS (variables) ========== */
+:root {
+  /* La palette tirée de L'Ange déchu de Cabanel */
+  --bureau: #231D14;
+  --barre: #2C291C;
+  --parchemin: #CCBDA9;
+  --brun-encre: #53341B;
+  --rouille: #663A1D;
+  --brun-gris: #5C4E3A;
+  --gris-cendre: #6F6758;
+  --or: #9B7145;
+  --or-vif: #B58550;
+  --creme: #EDE3D2;
+
+  /* Les rôles : ce sont eux qui changent la nuit */
+  --page-fond: radial-gradient(ellipse at center, #d8cbb8 0%, #CCBDA9 60%, #b9a78f 100%);
+  --page-ombre: inset 0 0 18px 6px #53341B, inset 0 0 4px 2px #231D14;
+  --encre: #231D14;           /* le texte principal */
+  --encre-titre: #53341B;     /* les titres */
+  --rubrique: #663A1D;        /* lettrines, rubriques, accents */
+  --texte-discret: #5C4E3A;   /* heures, petits textes */
+  --trait: #6F6758;           /* lignes, tâches terminées */
+  --encart: rgba(237, 227, 210, .35);
+  --grain-mode: multiply;
+
+  /* Les trois niveaux d'importance : Braise, Flamme, Cendre */
+  --braise: #663A1D;
+  --flamme: #B58550;
+  --cendre: #6F6758;
+  --contour-cendre: transparent;
+
+  /* Les polices */
+  --f-titre: 'EB Garamond', Georgia, serif;
+  --f-pratique: 'News Cycle', Arial, sans-serif;
+  --f-machine: 'Cutive', 'Courier New', monospace;
+}
+
+/* Le mode cuir, pour la nuit */
+body.theme-nuit {
+  --page-fond: radial-gradient(ellipse at center, #3a3524 0%, #2C291C 60%, #1c1810 100%);
+  --page-ombre: inset 0 0 18px 6px #000, inset 0 0 0 1px #53341B;
+  --encre: #CCBDA9;
+  --encre-titre: #CCBDA9;
+  --rubrique: #B58550;
+  --texte-discret: #9B7145;
+  --trait: #8a8070;
+  --encart: rgba(0, 0, 0, .25);
+  --grain-mode: overlay;
+  --braise: #a0522d;
+  --contour-cendre: #CCBDA9;
+  color-scheme: dark;
+}
+
+
+/* ========== 2. LA PAGE ET LE PAPIER ========== */
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  background: var(--bureau);
+  color: var(--encre);
+  font-family: var(--f-titre);
+  font-size: 16px;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#contenu {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 10px 86px;
+}
+
+/* La page de parchemin aux bords brûlés */
+.page {
+  position: relative;
+  background: var(--page-fond);
+  box-shadow: var(--page-ombre);
+  color: var(--encre);
+  padding: 22px 18px 26px;
+  min-height: calc(100dvh - 110px);
+  clip-path: polygon(3% 0.6%, 20% 0, 38% 0.8%, 60% 0, 82% 0.6%, 99% 0, 100% 30%, 98.8% 55%, 100% 80%, 97% 100%, 70% 99.3%, 45% 100%, 22% 99.4%, 0 100%, 1.2% 70%, 0 40%);
+}
+
+/* Le grain du papier, posé par-dessus la page */
+.page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .35;
+  mix-blend-mode: var(--grain-mode);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Le papier ligné des notes, avec sa marge rouge */
+.papier-ligne {
+  background:
+    linear-gradient(90deg, transparent 34px, rgba(102, 58, 29, .45) 34px 35px, transparent 35px),
+    repeating-linear-gradient(180deg, transparent 0 25px, rgba(111, 103, 88, .3) 25px 26px),
+    var(--page-fond);
+  padding-left: 46px;
+}
+
+/* La carte ancienne, pour la vue Mois */
+.fond-carte {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(83, 52, 27, .18) 39px 40px),
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(83, 52, 27, .18) 39px 40px),
+    var(--page-fond);
+}
+.rose-des-vents {
+  position: absolute;
+  right: 18px;
+  bottom: 22px;
+  width: 78px;
+  height: 78px;
+  opacity: .45;
+  color: var(--rubrique);
+  pointer-events: none;
+}
+
+/* Le ruban marque-page : il ramène à aujourd'hui */
+.ruban {
+  position: absolute;
+  right: 28px;
+  top: 0;
+  width: 15px;
+  height: 64px;
+  background: #663A1D;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%);
+  z-index: 2;
+}
+
+/* La fleur séchée, en décoration */
+.fleur-sechee {
+  position: absolute;
+  right: 10px;
+  bottom: 16px;
+  width: 64px;
+  opacity: .55;
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+
+/* ========== 3. LA BARRE DE NAVIGATION ========== */
+#navigation {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-around;
+  background: var(--barre);
+  border-top: 1px solid #53341B;
+  padding: 8px 2px calc(8px + env(safe-area-inset-bottom));
+}
+#navigation button {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: var(--f-titre);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--or);
+  padding: 6px 0;
+  cursor: pointer;
+}
+#navigation button.actif {
+  color: var(--or-vif);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+
+/* ========== 4. LES ÉLÉMENTS COMMUNS ========== */
+p { margin: 0; }
+
+.titre-page {
+  font-size: 24px;
+  color: var(--encre-titre);
+  line-height: 1.15;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* La lettrine des manuscrits enluminés */
+.lettrine {
+  float: left;
+  font-size: 2.9em;
+  line-height: .85;
+  color: var(--rubrique);
+  margin: 4px 8px 0 0;
+  border: 1px solid var(--or);
+  padding: 3px 6px;
+  background: var(--encart);
+}
+.initiale { color: var(--rubrique); font-size: 1.3em; }
+
+.rubrique {
+  color: var(--rubrique);
+  font-style: italic;
+  margin: 16px 0 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.petit {
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  color: var(--texte-discret);
+  font-style: normal;
+}
+.filet { height: 1px; background: var(--or); margin: 10px 0; }
+.vide { font-style: italic; color: var(--texte-discret); padding: 6px 0; }
+.clair { clear: both; }
+
+/* Les niveaux d'importance */
+.imp-braise { background: var(--braise); color: var(--creme); }
+.imp-flamme { background: var(--flamme); color: #231D14; border: 1px solid var(--or); }
+.imp-cendre { background: var(--cendre); color: var(--creme); border: 1px solid var(--contour-cendre); }
+.point {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+}
+.point.braise { background: var(--braise); }
+.point.flamme { background: var(--flamme); border: 1px solid var(--or); }
+.point.cendre { background: var(--cendre); border: 1px solid var(--contour-cendre); }
+
+/* Les cases à cocher */
+.case {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  border: 1.5px solid var(--encre-titre);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: var(--creme);
+  font-size: 12px;
+  line-height: 14px;
+  text-align: center;
+}
+.case.cochee { background: var(--trait); border-color: var(--trait); }
+
+/* Les petits boutons d'onglets et de choix */
+.onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.onglets button, .choix {
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--or);
+  background: transparent;
+  color: var(--texte-discret);
+  cursor: pointer;
+}
+.onglets button.actif, .choix.actif {
+  background: var(--encre-titre);
+  border-color: var(--encre-titre);
+  color: var(--creme);
+}
+body.theme-nuit .onglets button.actif, body.theme-nuit .choix.actif {
+  background: var(--or-vif);
+  border-color: var(--or-vif);
+  color: #231D14;
+}
+.choix.imp-braise, .choix.imp-flamme, .choix.imp-cendre { opacity: .5; }
+.choix.imp-braise { color: var(--creme); }
+.choix.imp-flamme { color: #231D14; }
+.choix.imp-cendre { color: var(--creme); }
+.choix.actif.imp-braise, .choix.actif.imp-flamme, .choix.actif.imp-cendre {
+  opacity: 1;
+  outline: 2px solid var(--encre);
+  outline-offset: 1px;
+}
+.jour-choix {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+/* Les boutons */
+.bouton {
+  font-family: var(--f-titre);
+  font-size: 16px;
+  padding: 8px 16px;
+  border: 1px solid var(--rubrique);
+  background: transparent;
+  color: var(--rubrique);
+  cursor: pointer;
+}
+.bouton.plein { background: #663A1D; border-color: #663A1D; color: var(--creme); }
+.bouton.discret { border-color: transparent; font-style: italic; color: var(--texte-discret); }
+.lien {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  color: var(--or);
+  cursor: pointer;
+}
+.rangee-boutons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Le bouton rond « + », comme un sceau de cire */
+.bouton-plus {
+  position: fixed;
+  right: max(18px, calc(50% - 262px));
+  bottom: 80px;
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #663A1D;
+  color: var(--creme);
+  font-family: var(--f-titre);
+  font-size: 30px;
+  line-height: 46px;
+  box-shadow: inset 0 0 0 3px #7a271f, 0 3px 8px rgba(0, 0, 0, .5);
+  cursor: pointer;
+}
+
+/* Les champs de formulaire : des lignes sur la page */
+.champ { margin-top: 12px; }
+.champ label, .etiquette-champ {
+  display: block;
+  font-family: var(--f-pratique);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+  margin-bottom: 3px;
+}
+.page input[type=text], .page input[type=date], .page input[type=time], .page input[type=search],
+.page textarea, .page select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--trait);
+  font-family: var(--f-titre);
+  font-size: 17px;
+  color: var(--encre);
+  padding: 4px 0;
+  outline: none;
+  border-radius: 0;
+}
+.page input:focus, .page textarea:focus { border-bottom-color: var(--rubrique); }
+.page textarea { resize: vertical; min-height: 70px; font-family: var(--f-machine); font-size: 14px; line-height: 1.6; }
+.colonnes { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; }
+.deux-colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.case-texte { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 15px; cursor: pointer; }
+
+/* Les fenêtres qui s'ouvrent par-dessus */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 7, 4, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  animation: apparaitre .25s ease;
+}
+.fenetre {
+  width: 100%;
+  max-width: 520px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  min-height: 0;
+}
+.fenetre.petite { max-width: 380px; }
+@keyframes apparaitre { from { opacity: 0; } to { opacity: 1; } }
+
+
+/* ========== 5. LE CALENDRIER ========== */
+.entete-calendrier {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding-right: 34px;
+}
+.fleche {
+  background: none;
+  border: none;
+  color: var(--or);
+  font-size: 26px;
+  padding: 0 6px;
+  cursor: pointer;
+  font-family: var(--f-titre);
+}
+.titre-calendrier { font-size: 19px; color: var(--encre-titre); text-align: center; flex: 1; }
+
+/* Vue Mois */
+.mois-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  row-gap: 4px;
+}
+.mois-grille .nom-jour { font-size: 13px; color: var(--rubrique); font-style: italic; padding-bottom: 4px; }
+.jour-mois {
+  background: none;
+  border: none;
+  font-family: var(--f-titre);
+  font-size: 17px;
+  color: var(--encre);
+  padding: 4px 0 2px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.jour-mois .numero {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  border-radius: 50%;
+}
+.jour-mois.aujourdhui .numero { background: #663A1D; color: var(--creme); }
+.jour-mois.selectionne .numero { outline: 1.5px solid var(--rubrique); outline-offset: 1px; }
+.jour-mois.hors-mois { opacity: .35; }
+.jour-mois .points { display: flex; justify-content: center; gap: 2px; height: 7px; }
+.jour-mois .points .point { width: 6px; height: 6px; }
+
+/* Vues Semaine et Jour : la grille des heures */
+.semaine-entete, .semaine-corps {
+  display: grid;
+  grid-template-columns: 32px repeat(7, 1fr);
+}
+.semaine-entete { text-align: center; margin-bottom: 4px; }
+.semaine-entete span { font-size: 12px; color: var(--rubrique); font-style: italic; line-height: 1.15; }
+.semaine-entete b {
+  display: block;
+  font-weight: 400;
+  font-size: 17px;
+  color: var(--encre);
+  font-style: normal;
+  margin: 0 auto;
+}
+.semaine-entete .ajd b {
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  border-radius: 50%;
+  background: #663A1D;
+  color: var(--creme);
+}
+.grille-heures {
+  position: relative;
+  background-image: repeating-linear-gradient(180deg,
+    rgba(83, 52, 27, .55) 0 1px, transparent 1px calc(var(--h) / 2 - 1px),
+    rgba(111, 103, 88, .25) calc(var(--h) / 2 - 1px) calc(var(--h) / 2), transparent calc(var(--h) / 2) var(--h));
+}
+body.theme-nuit .grille-heures {
+  background-image: repeating-linear-gradient(180deg,
+    rgba(181, 133, 80, .45) 0 1px, transparent 1px calc(var(--h) / 2 - 1px),
+    rgba(181, 133, 80, .15) calc(var(--h) / 2 - 1px) calc(var(--h) / 2), transparent calc(var(--h) / 2) var(--h));
+}
+.colonne-jour { position: relative; border-left: 1px solid rgba(111, 103, 88, .25); }
+.colonne-jour.ajd { background: rgba(142, 47, 37, .07); }
+.heure {
+  position: absolute;
+  left: 0;
+  width: 28px;
+  text-align: right;
+  font-family: var(--f-pratique);
+  font-size: 11px;
+  color: var(--texte-discret);
+  transform: translateY(-6px);
+}
+.bloc {
+  position: absolute;
+  left: 1px;
+  right: 2px;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 1.15;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1;
+}
+.bloc.recurrent { outline: 1px dashed rgba(237, 227, 210, .8); outline-offset: -3px; }
+.bloc.imp-flamme.recurrent { outline-color: rgba(35, 29, 20, .6); }
+.vue-jour .bloc { left: 4px; right: 4px; padding: 4px 8px; font-size: 15px; }
+.vue-jour .bloc .petit { color: inherit; opacity: .85; }
+.maintenant { position: absolute; left: 0; right: 0; height: 2px; background: #663A1D; z-index: 2; pointer-events: none; }
+.maintenant::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #663A1D;
+}
+body.theme-nuit .maintenant, body.theme-nuit .maintenant::before { background: var(--or-vif); }
+
+/* Les lignes d'un programme ou d'une liste de rendez-vous */
+.ligne-programme {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.ligne-programme .petit { min-width: 52px; flex: none; white-space: nowrap; }
+.ligne-programme.passe span:last-child { text-decoration: line-through; color: var(--trait); }
+
+.prochain {
+  border: 1px solid var(--or);
+  padding: 8px 10px;
+  background: var(--encart);
+  cursor: pointer;
+}
+.citation-du-jour {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--or);
+  text-align: center;
+}
+.citation-du-jour p:first-child { font-style: italic; color: var(--encre-titre); font-size: 15px; }
+
+/* La fiche d'un rendez-vous */
+.detail { display: flex; gap: 12px; margin: 10px 0; align-items: baseline; }
+.detail > span:first-child { width: 22px; flex: none; color: var(--or); text-align: center; }
+
+
+/* ========== 6. LES TÂCHES ========== */
+.tache {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(111, 103, 88, .3);
+  font-family: var(--f-machine);
+  font-size: 14px;
+}
+.tache .texte { flex: 1; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.tache.faite .texte { color: var(--trait); text-decoration: line-through; }
+.tache .petit { flex: none; }
+.deplier {
+  background: none;
+  border: none;
+  color: var(--rubrique);
+  font-size: 14px;
+  width: 14px;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--f-titre);
+}
+.progres { height: 4px; background: rgba(111, 103, 88, .3); margin: 0 0 4px 41px; }
+.progres span { display: block; height: 100%; background: var(--braise); }
+.sous-taches { margin-left: 26px; border-left: 1px solid var(--or); padding-left: 10px; }
+.sous-taches .tache { border-bottom: none; padding: 4px 0; }
+.ajout-rapide {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px dashed var(--or);
+  padding: 4px 10px;
+  margin-top: 12px;
+}
+.ajout-rapide input { border: none !important; font-family: var(--f-machine) !important; font-size: 14px !important; }
+.ajout-rapide button { background: none; border: none; color: var(--rubrique); font-size: 22px; cursor: pointer; font-family: var(--f-titre); }
+.ligne-sous-tache { display: flex; gap: 6px; align-items: center; padding: 4px 0; font-family: var(--f-machine); font-size: 14px; }
+.ligne-sous-tache input[type=text] { flex: 1; font-family: var(--f-machine) !important; font-size: 14px !important; }
+.mini { background: none; border: 1px solid var(--or); color: var(--texte-discret); font-size: 12px; padding: 1px 6px; cursor: pointer; }
+
+/* Les listes thématiques */
+.fiche-liste {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--or);
+  background: var(--encart);
+  padding: 10px 10px 10px 20px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.fiche-liste .onglet-couleur { position: absolute; left: -1px; top: -1px; bottom: -1px; width: 7px; }
+.fiche-liste b { font-weight: 400; font-size: 18px; color: var(--encre-titre); flex: 1; }
+
+
+/* ========== 7. LES NOTES ========== */
+.carte-note {
+  position: relative;
+  border: 1px solid var(--or);
+  background: var(--encart);
+  padding: 9px 12px;
+  margin-bottom: 9px;
+  cursor: pointer;
+}
+.carte-note b { font-weight: 400; font-size: 18px; color: var(--encre-titre); display: block; padding-right: 18px; }
+.carte-note .extrait { font-family: var(--f-machine); font-size: 13px; color: var(--texte-discret); margin: 3px 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.carte-note .ruban-mini {
+  position: absolute;
+  right: 12px;
+  top: -1px;
+  width: 11px;
+  height: 22px;
+  background: #663A1D;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+.etiquette {
+  display: inline-block;
+  font-family: var(--f-pratique);
+  font-size: 11px;
+  padding: 1px 7px;
+  border: 1px solid var(--or);
+  color: var(--texte-discret);
+  margin: 0 4px 3px 0;
+}
+.texte-note { font-family: var(--f-machine); font-size: 14px; line-height: 26px; white-space: pre-wrap; min-height: 260px; cursor: text; }
+.texte-note .ligne-case { display: flex; align-items: center; gap: 8px; }
+.texte-note .ligne-case.faite span { text-decoration: line-through; color: var(--trait); }
+.page.papier-ligne textarea { line-height: 26px; background: transparent; border-bottom: none; min-height: 320px; }
+.outils-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 16px;
+  font-family: var(--f-pratique);
+  font-size: 12px;
+}
+
+
+/* ========== 8. LA BIBLIOTHÈQUE ========== */
+.salle {
+  position: relative;
+  min-height: calc(100dvh - 110px);
+  background: linear-gradient(90deg, #2a1a0c, #3b2512 3%, #2a1a0c 4%, #2a1a0c 96%, #3b2512 97%, #2a1a0c);
+  border: 6px solid #3b2512;
+  border-radius: 3px;
+  padding: 10px 10px 70px;
+  overflow: hidden;
+}
+.salle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 98%, rgba(255, 190, 110, .32), transparent 62%);
+  pointer-events: none;
+}
+.salle-entete { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; }
+.salle-entete .titre-salle { color: var(--or-vif); font-style: italic; font-size: 20px; }
+.etagere {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 118px;
+  padding: 0 6px;
+  margin-top: 14px;
+  border-bottom: 12px solid #3b2512;
+  box-shadow: 0 7px 8px rgba(0, 0, 0, .6);
+  cursor: pointer;
+}
+.plaque {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--f-titre);
+  font-style: italic;
+  font-size: 11px;
+  line-height: 11px;
+  color: #231D14;
+  background: var(--or-vif);
+  border: 1px solid var(--or);
+  padding: 0 9px;
+  white-space: nowrap;
+  z-index: 2;
+}
+.plaque.vide-plaque { background: transparent; border-color: transparent; color: rgba(181, 133, 80, .4); }
+.reliure {
+  position: relative;
+  flex: none;
+  border-radius: 2px 2px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 2px 0 3px rgba(255, 255, 255, .12), inset -3px 0 4px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform .2s;
+}
+.reliure span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #d9b679;
+  font-family: var(--f-titre);
+  font-size: 11px;
+  letter-spacing: .4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 84%;
+}
+.reliure::before, .reliure::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: var(--or-vif);
+  opacity: .8;
+}
+.reliure::before { top: 8px; }
+.reliure::after { bottom: 8px; }
+.reliure.souleve { transform: translateY(-12px); outline: 2px solid var(--or-vif); }
+.chandelle-salle { position: absolute; right: 18px; bottom: 14px; z-index: 3; width: 14px; height: 70px; pointer-events: none; }
+.chandelle-salle .cire { position: absolute; bottom: 0; left: 0; width: 14px; height: 34px; background: var(--creme); border-radius: 2px; }
+.chandelle-salle .flamme {
+  position: absolute;
+  bottom: 36px;
+  left: 1px;
+  width: 12px;
+  height: 18px;
+  background: var(--or-vif);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-shadow: 0 0 22px 10px rgba(255, 190, 110, .45);
+  animation: vaciller 3s ease-in-out infinite;
+}
+@keyframes vaciller { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(.94, 1.06) rotate(2deg); } }
+.bandeau-deplacement {
+  position: relative;
+  z-index: 3;
+  background: var(--barre);
+  border: 1px solid var(--or-vif);
+  color: var(--parchemin);
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  padding: 8px 10px;
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ajouter-livre {
+  position: absolute;
+  left: 12px;
+  bottom: 16px;
+  z-index: 3;
+  background: none;
+  border: 1px dashed var(--or);
+  color: var(--or-vif);
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* Quand on s'approche d'une bibliothèque : un zoom avant */
+.salle.entree { animation: approcher .5s ease-out; }
+@keyframes approcher { from { transform: scale(.55); opacity: .2; } to { transform: scale(1); opacity: 1; } }
+.plaque { cursor: pointer; font-family: var(--f-titre); }
+
+/* La pièce, vue de loin */
+.piece {
+  display: flex;
+  align-items: flex-end;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  height: calc(100dvh - 160px);
+  min-height: 420px;
+  background: #1f160c;
+  border-radius: 4px;
+}
+.piece > * { flex: none; scroll-snap-align: center; height: 100%; }
+.piece svg { display: block; height: 100%; width: auto; }
+.piece .meuble { cursor: pointer; }
+
+/* Un livre ouvert */
+.livre-entete { display: flex; gap: 12px; margin: 10px 0; }
+.barre-progres { height: 5px; background: rgba(111, 103, 88, .3); margin: 4px 0 12px; }
+.barre-progres span { display: block; height: 100%; background: #663A1D; }
+.citation {
+  border-left: 3px solid var(--or-vif);
+  padding: 3px 9px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.citation p:first-child { font-style: italic; font-size: 15px; line-height: 1.35; }
+
+
+/* ========== 9. LE LECTEUR ========== */
+#lecteur {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--bureau);
+  display: flex;
+  flex-direction: column;
+}
+#lecteur[hidden] { display: none; }
+.barre-lecteur {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--barre);
+  color: var(--parchemin);
+  font-family: var(--f-titre);
+}
+.barre-lecteur .titre-lecture { flex: 1; font-style: italic; color: var(--or-vif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barre-lecteur button {
+  background: none;
+  border: 1px solid var(--or);
+  color: var(--parchemin);
+  font-family: var(--f-pratique);
+  font-size: 12px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.zone-lecture { position: relative; flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 10px; }
+.page-pdf { position: relative; box-shadow: 0 4px 16px rgba(0, 0, 0, .6); background: #fff; }
+.page-pdf canvas { display: block; }
+.zone-epub { width: 100%; height: 100%; background: var(--parchemin); }
+.bouton-surligner {
+  position: fixed;
+  left: 50%;
+  bottom: 74px;
+  transform: translateX(-50%);
+  z-index: 75;
+  background: #663A1D;
+  color: var(--creme);
+  border: none;
+  font-family: var(--f-titre);
+  font-size: 16px;
+  padding: 9px 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .6);
+  cursor: pointer;
+}
+
+/* La couche de texte des PDF (pour sélectionner et surligner) */
+.textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  opacity: 1;
+  z-index: 2;
+  text-align: initial;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+.textLayer span, .textLayer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.textLayer ::selection { background: rgba(181, 133, 80, .5); }
+.surlignage { position: absolute; background: rgba(181, 133, 80, .38); pointer-events: none; z-index: 1; }
+
+
+/* ========== 10. L'OUVERTURE ET LES MESSAGES ========== */
+#ouverture {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bureau);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  cursor: pointer;
+  outline: none;
+  /* La page tourne autour de son bord gauche, comme la couverture d'un livre */
+  transform-origin: left center;
+  transform: perspective(1800px) rotateY(0deg);
+  transition: transform 1.3s cubic-bezier(.55, .05, .35, 1);
+  backface-visibility: hidden;
+}
+/* L'ombre qui s'assombrit pendant que la page se soulève */
+#ouverture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0) 70%);
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  pointer-events: none;
+}
+#ouverture.tournee { transform: perspective(1800px) rotateY(-120deg); pointer-events: none; }
+#ouverture.tournee::after { opacity: 1; }
+/* La petite invitation sous l'étiquette, qui respire doucement */
+#ouverture .invitation {
+  margin-top: 26px;
+  color: var(--or);
+  font-family: var(--f-pratique);
+  font-size: 13px;
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: respirer 2.6s ease-in-out 1.2s infinite;
+}
+@keyframes respirer {
+  0%, 100% { opacity: .25; }
+  50% { opacity: .85; }
+}
+.etiquette-exlibris {
+  width: 100%;
+  max-width: 330px;
+  min-height: 0;
+  padding: 34px 20px 30px;
+  text-align: center;
+  --page-fond: radial-gradient(ellipse at center, #d8cbb8 0%, #CCBDA9 60%, #b9a78f 100%);
+  --page-ombre: inset 0 0 18px 6px #53341B, inset 0 0 4px 2px #231D14;
+}
+.double-cadre { position: absolute; inset: 13px; border: 3px double var(--or); pointer-events: none; }
+.chandelle-dessin { position: relative; width: 40px; height: 56px; margin: 0 auto 6px; display: block; }
+.chandelle-dessin .cire { position: absolute; bottom: 0; left: 13px; width: 14px; height: 30px; background: var(--creme); border: 1px solid var(--or); border-radius: 2px; }
+.chandelle-dessin .flamme { position: absolute; bottom: 31px; left: 14px; width: 12px; height: 20px; background: var(--or-vif); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: vaciller 3s ease-in-out infinite; }
+.etiquette-exlibris .ex { color: #663A1D; font-size: 18px; letter-spacing: 6px; }
+.etiquette-exlibris .libris { color: #53341B; font-size: 50px; font-style: italic; line-height: 1; }
+.etiquette-exlibris .filet { margin: 12px 44px; }
+.etiquette-exlibris .sous-titre { color: #5C4E3A; font-style: italic; font-size: 15px; }
+.etiquette-exlibris .soleil { color: var(--or); margin-top: 24px; }
+.etiquette-exlibris .devise { color: #663A1D; font-size: 20px; font-style: italic; letter-spacing: 1px; margin-top: 4px; }
+.filet-point { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
+.filet-point i { display: block; width: 34px; height: 1px; background: var(--or); }
+.filet-point b { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--or); }
+
+#messages {
+  position: fixed;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.message {
+  background: var(--barre);
+  color: var(--parchemin);
+  border: 1px solid var(--or);
+  font-family: var(--f-pratique);
+  font-size: 13px;
+  padding: 9px 14px;
+  max-width: 92%;
+  animation: apparaitre .3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+}
