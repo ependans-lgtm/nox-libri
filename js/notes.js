@@ -39,8 +39,9 @@ function afficherNotes(conteneur) {
       n.epinglee ? el("span", { class: "ruban-mini" }) : null,
       el("b", null, n.titre || "Sans titre"),
       el("p", { class: "extrait" }, extraitNote(n)),
-      n.etiquettes.map(e => el("span", { class: "etiquette" }, e)),
-      el("span", { class: "petit", style: { float: "right" } }, quandModifiee(n.modifieeLe)))));
+      el("div", { class: "pied-note" },
+        el("span", null, n.etiquettes.map(e => el("span", { class: "etiquette" }, e))),
+        el("span", { class: "petit" }, quandModifiee(n.modifieeLe))))));
   }
   dessinerListe();
 

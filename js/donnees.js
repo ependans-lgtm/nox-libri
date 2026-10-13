@@ -59,7 +59,7 @@ function sauverDonnees() {
 function exporterSauvegarde() {
   const texte = JSON.stringify(donnees, null, 2);
   const fichier = new Blob([texte], { type: "application/json" });
-  const lien = el("a", { href: URL.createObjectURL(fichier), download: "ex-libris-sauvegarde-" + aujourdhui() + ".json" });
+  const lien = el("a", { href: URL.createObjectURL(fichier), download: "nox-libri-sauvegarde-" + aujourdhui() + ".json" });
   document.body.append(lien);
   lien.click();
   lien.remove();
@@ -68,7 +68,7 @@ function exporterSauvegarde() {
 function importerSauvegarde(fichier) {
   return fichier.text().then(texte => {
     const lu = JSON.parse(texte);
-    if (!lu || !Array.isArray(lu.rendezVous)) throw new Error("Ce fichier n'est pas une sauvegarde d'Ex Libris");
+    if (!lu || !Array.isArray(lu.rendezVous)) throw new Error("Ce fichier n'est pas une sauvegarde de Nox Libri");
     donnees = Object.assign(donneesDeDepart(), lu);
     sauverDonnees();
   });
@@ -114,6 +114,19 @@ function supprimerFichierLivre(id) {
     transaction.objectStore("fichiers").delete(id);
     transaction.oncomplete = () => reussite();
   }));
+}
+
+// ===== Tout effacer : les rendez-vous, les tâches, les notes, les réglages et les fichiers des livres =====
+function effacerToutesLesDonnees() {
+  localStorage.removeItem(CLE_STOCKAGE);
+  if (baseLivres) {
+    baseLivres.close();                      // il faut refermer le coffre avant de pouvoir le détruire
+    baseLivres = null;
+  }
+  return new Promise(fini => {
+    const demande = indexedDB.deleteDatabase("exlibris-livres");
+    demande.onsuccess = demande.onerror = demande.onblocked = () => fini();
+  });
 }
 
 // Demander au téléphone de ne pas effacer nos données s'il manque de place

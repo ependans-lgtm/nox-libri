@@ -239,22 +239,87 @@ function meubleBibliotheque(b) {
   return svg;
 }
 
-// La fenêtre en arc, avec ses rideaux, la lune et une chandelle sur le rebord
+// La fenêtre en arc, avec ses rideaux et une chandelle sur le rebord.
+// Elle suit le mode de l'application :
+//   - mode chandelle (jour) : un paysage de campagne anglaise, avec son manoir et son lac ;
+//   - mode cuir (nuit) : la lune, les étoiles, et la chandelle éteinte.
 function dessinFenetre() {
+  const nuit = document.body.classList.contains("theme-nuit");
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 190 520");
-  svg.innerHTML = '<defs><linearGradient id="ciel-piece" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141c2b"/><stop offset=".7" stop-color="#2b3a4f"/><stop offset="1" stop-color="#3d4a52"/></linearGradient>'
+
+  // La forme de la vitre : tout le paysage est découpé dedans
+  const vitre = "M49 373 V182 a46 46 0 0 1 92 0 V373 Z";
+
+  // --- Le paysage de nuit ---
+  const paysageNuit = `<path d="${vitre}" fill="url(#ciel-piece)"/>`
+    + '<circle cx="118" cy="190" r="26" fill="url(#halo-lune)"/><circle cx="118" cy="190" r="8" fill="#e6ece8"/><circle cx="121" cy="188" r="7" fill="#2b3a4f" opacity=".35"/>'
+    + '<g fill="#EDE3D2"><circle cx="66" cy="200" r="1"/><circle cx="80" cy="236" r=".8"/><circle cx="130" cy="252" r=".9"/><circle cx="62" cy="276" r=".8"/><circle cx="95" cy="172" r=".9"/><circle cx="136" cy="300" r=".7"/></g>'
+    + '<path d="M49 340 Q70 322 95 334 T141 328 V373 H49 Z" fill="#1a2230" opacity=".85"/>';
+
+  // --- Le paysage de jour : du plus lointain au plus proche ---
+  const paysageJour = `<path d="${vitre}" fill="url(#ciel-jour)"/>`
+    + '<g clip-path="url(#decoupe-vitre)">'
+    // le soleil voilé et les nuages
+    + '<circle cx="66" cy="196" r="30" fill="url(#halo-soleil)"/>'
+    + '<g fill="#ffffff" opacity=".8"><ellipse cx="112" cy="176" rx="17" ry="5"/><ellipse cx="124" cy="172" rx="10" ry="4.5"/><ellipse cx="70" cy="226" rx="13" ry="3.5"/><ellipse cx="128" cy="232" rx="11" ry="3"/></g>'
+    // les collines lointaines, bleutées par la distance
+    + '<path d="M49 292 Q66 276 84 286 T118 280 T141 288 V373 H49 Z" fill="#a9c0b4"/>'
+    + '<path d="M49 302 Q72 288 96 298 T141 294 V373 H49 Z" fill="#8fae8a"/>'
+    // le bois derrière le manoir
+    + '<g fill="#55764c"><circle cx="97" cy="296" r="6"/><circle cx="104" cy="293" r="7"/><circle cx="130" cy="294" r="7"/><circle cx="137" cy="297" r="6"/></g>'
+    // le manoir : deux ailes, un corps central à fronton et colonnes
+    + '<g>'
+    + '<rect x="101" y="296" width="32" height="12" fill="#eadfc6"/>'
+    + '<rect x="111" y="292" width="12" height="16" fill="#f1e8d2"/>'
+    + '<path d="M109.5 292 L117 286.5 L124.500 292 Z" fill="#e2d6ba" stroke="#b9a988" stroke-width=".4"/>'
+    + '<path d="M101 296 h10 M123 296 h10" stroke="#8b7a62" stroke-width="1.2"/>'
+    + '<g fill="#8b7a62"><rect x="103.5" y="290.500" width="1.800" height="5.5"/><rect x="128.700" y="290.500" width="1.800" height="5.5"/></g>'
+    + '<g stroke="#cdbf9f" stroke-width=".7"><path d="M113 293 V308 M115.700 293 V308 M118.300 293 V308 M121 293 V308"/></g>'
+    + '<g fill="#5d6f7c"><rect x="103" y="298.500" width="1.600" height="2.500"/><rect x="106.500" y="298.500" width="1.600" height="2.500"/><rect x="125.900" y="298.500" width="1.600" height="2.500"/><rect x="129.400" y="298.500" width="1.600" height="2.500"/>'
+    + '<rect x="103" y="303" width="1.600" height="2.500"/><rect x="106.500" y="303" width="1.600" height="2.500"/><rect x="125.900" y="303" width="1.600" height="2.500"/><rect x="129.400" y="303" width="1.600" height="2.500"/></g>'
+    + '<rect x="116" y="303.500" width="2" height="4.500" fill="#6b5a45"/>'
+    + '</g>'
+    // la grande pelouse qui descend vers le lac
+    + '<path d="M49 312 Q80 302 141 308 V373 H49 Z" fill="#86a86e"/>'
+    // le lac, où se reflète le manoir
+    + '<ellipse cx="88" cy="330" rx="34" ry="8.5" fill="#b4d2e2"/>'
+    + '<ellipse cx="88" cy="330" rx="34" ry="8.5" fill="url(#reflet-lac)"/>'
+    + '<rect x="103" y="324" width="14" height="5" fill="#eadfc6" opacity=".35"/>'
+    + '<g stroke="#ffffff" stroke-width=".6" opacity=".7"><path d="M66 329 h12 M84 333 h16 M100 327 h9"/></g>'
+    // l'allée claire qui serpente jusqu'au manoir
+    + '<path d="M118 309 Q128 318 122 330 T132 373 H140 Q128 340 130 328 T121 309 Z" fill="#e3d7b6" opacity=".9"/>'
+    // les grands arbres du parc, et quelques moutons
+    + '<g fill="#4a6b42"><circle cx="58" cy="316" r="9"/><circle cx="66" cy="311" r="8"/><circle cx="52" cy="308" r="7"/></g>'
+    + '<path d="M60 322 v9" stroke="#4b3a28" stroke-width="2"/>'
+    + '<g fill="#f6f1e4"><ellipse cx="74" cy="346" rx="2.200" ry="1.400"/><ellipse cx="82" cy="350" rx="2.200" ry="1.400"/><ellipse cx="100" cy="347" rx="2.200" ry="1.400"/></g>'
+    // le premier plan : l'herbe plus sombre et un rosier
+    + '<path d="M49 352 Q90 342 141 356 V373 H49 Z" fill="#6f9459"/>'
+    + '<g fill="#3f5d3a"><circle cx="54" cy="366" r="9"/><circle cx="64" cy="370" r="7"/><circle cx="136" cy="368" r="8"/></g>'
+    + '<g fill="#d98a8f"><circle cx="52" cy="361" r="1.500"/><circle cx="59" cy="364" r="1.500"/><circle cx="65" cy="367" r="1.300"/><circle cx="134" cy="363" r="1.500"/><circle cx="139" cy="367" r="1.300"/></g>'
+    + '</g>';
+
+  // La chandelle du rebord : allumée en mode chandelle, éteinte en mode cuir
+  const chandelle = '<rect x="76" y="364" width="8" height="16" fill="#EDE3D2"/>'
+    + (nuit ? '<path d="M80 364 v-3" stroke="#3b2512" stroke-width="1"/>'
+            : '<ellipse cx="80" cy="358" rx="3.5" ry="6" fill="#B58550"/><circle cx="80" cy="358" r="14" fill="#ffbe6e" opacity=".18"/>');
+
+  svg.innerHTML = '<defs>'
+    + '<linearGradient id="ciel-piece" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141c2b"/><stop offset=".7" stop-color="#2b3a4f"/><stop offset="1" stop-color="#3d4a52"/></linearGradient>'
+    + '<linearGradient id="ciel-jour" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fbadb"/><stop offset=".45" stop-color="#cfe3ee"/><stop offset=".7" stop-color="#f4ecd6"/></linearGradient>'
+    + '<linearGradient id="reflet-lac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".5"/><stop offset="1" stop-color="#6f9ab5" stop-opacity=".35"/></linearGradient>'
     + '<radialGradient id="halo-lune" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d7e0e6" stop-opacity=".5"/><stop offset="1" stop-color="#d7e0e6" stop-opacity="0"/></radialGradient>'
-    + '<radialGradient id="lueur-piece" cx=".5" cy=".85" r=".7"><stop offset="0" stop-color="#ffbe6e" stop-opacity=".25"/><stop offset="1" stop-color="#ffbe6e" stop-opacity="0"/></radialGradient></defs>'
+    + '<radialGradient id="halo-soleil" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe6" stop-opacity=".95"/><stop offset=".3" stop-color="#fff6cf" stop-opacity=".6"/><stop offset="1" stop-color="#fff6cf" stop-opacity="0"/></radialGradient>'
+    + (nuit
+      ? '<radialGradient id="lueur-piece" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#9fb6d6" stop-opacity=".16"/><stop offset="1" stop-color="#9fb6d6" stop-opacity="0"/></radialGradient>'
+      : '<radialGradient id="lueur-piece" cx=".5" cy=".55" r=".8"><stop offset="0" stop-color="#fff0c4" stop-opacity=".3"/><stop offset="1" stop-color="#fff0c4" stop-opacity="0"/></radialGradient>')
+    + `<clipPath id="decoupe-vitre"><path d="${vitre}"/></clipPath></defs>`
     + '<rect width="190" height="520" fill="#1f160c"/>'
     + '<g stroke="#25190d" stroke-width="2">' + Array.from({ length: 16 }, (_, i) => `<path d="M${6 + i * 12} 0V486"/>`).join("") + '</g>'
     + '<rect y="486" width="190" height="34" fill="#2a1a0c"/><rect y="478" width="190" height="8" fill="#3b2512"/>'
     + '<ellipse cx="95" cy="503" rx="70" ry="11" fill="#3a1f18" stroke="#663A1D" stroke-width="1.5"/>'
     + '<path d="M40 380 V180 a55 55 0 0 1 110 0 V380 Z" fill="#2a1a0c" stroke="#3b2512" stroke-width="7"/>'
-    + '<path d="M49 373 V182 a46 46 0 0 1 92 0 V373 Z" fill="url(#ciel-piece)"/>'
-    + '<circle cx="118" cy="190" r="26" fill="url(#halo-lune)"/><circle cx="118" cy="190" r="8" fill="#e6ece8"/><circle cx="121" cy="188" r="7" fill="#2b3a4f" opacity=".35"/>'
-    + '<g fill="#EDE3D2"><circle cx="66" cy="200" r="1"/><circle cx="80" cy="236" r=".8"/><circle cx="130" cy="252" r=".9"/><circle cx="62" cy="276" r=".8"/><circle cx="95" cy="172" r=".9"/><circle cx="136" cy="300" r=".7"/></g>'
-    + '<path d="M49 340 Q70 322 95 334 T141 328 V373 H49 Z" fill="#1a2230" opacity=".85"/>'
+    + (nuit ? paysageNuit : paysageJour)
     + '<g stroke="#3b2512" stroke-width="3.5" fill="none"><path d="M95 136 V373"/><path d="M49 240 H141"/><path d="M49 308 H141"/></g>'
     + '<g stroke="#3b2512" stroke-width="1.3" fill="none" opacity=".9"><path d="M49 274 H141 M49 341 H141 M72 182 V373 M118 182 V373"/></g>'
     + '<path d="M40 180 a55 55 0 0 1 110 0" fill="none" stroke="#9B7145" stroke-width="1.3"/>'
@@ -264,11 +329,10 @@ function dessinFenetre() {
     + '<path d="M157 138 Q164 250 154 380 L172 380 Q174 250 165 138 Z" fill="#53341B"/><path d="M161 146 Q167 255 159 376" stroke="#3b2512" fill="none"/>'
     + '<rect x="16" y="130" width="158" height="9" rx="2" fill="#3b2512"/><circle cx="16" cy="134.5" r="5" fill="#9B7145"/><circle cx="174" cy="134.5" r="5" fill="#9B7145"/>'
     + '<path d="M20 282 q10 5 16 -2" stroke="#B58550" stroke-width="2.4" fill="none"/><path d="M170 282 q-10 5 -16 -2" stroke="#B58550" stroke-width="2.4" fill="none"/>'
-    + '<rect x="76" y="364" width="8" height="16" fill="#EDE3D2"/><ellipse cx="80" cy="358" rx="3.5" ry="6" fill="#B58550"/><circle cx="80" cy="358" r="14" fill="#ffbe6e" opacity=".18"/>'
+    + chandelle
     + '<rect width="190" height="520" fill="url(#lueur-piece)"/>';
   return svg;
 }
-
 
 // ===== Ajouter des livres =====
 async function importerLivres(fichiers) {

@@ -1,0 +1,39 @@
+/* =====================================================================
+   L'habillage des pages de texte : politique de confidentialité, licences
+   (des pages simples, lisibles aussi en dehors de l'application)
+   ===================================================================== */
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: #231D14;
+  color: #231D14;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 22px 48px;
+  background: #CCBDA9;
+  min-height: 100vh;
+}
+
+h1 { font-size: 30px; font-weight: 400; color: #53341B; line-height: 1.15; margin: 0 0 4px; }
+h2 { font-size: 21px; font-weight: 400; font-style: italic; color: #663A1D; margin: 30px 0 6px; border-bottom: 1px solid #9B7145; padding-bottom: 3px; }
+p { margin: 8px 0; }
+ul { margin: 8px 0; padding-left: 22px; }
+li { margin: 5px 0; }
+a { color: #663A1D; }
+
+.date { font-family: "News Cycle", Arial, sans-serif; font-size: 13px; color: #5C4E3A; }
+.resume { border: 1px solid #9B7145; background: #d8cbb8; padding: 10px 14px; margin: 16px 0; }
+.retour { font-family: "News Cycle", Arial, sans-serif; font-size: 14px; }
+
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 16px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid rgba(111, 103, 88, .45); }
+th { font-family: "News Cycle", Arial, sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #5C4E3A; font-weight: 400; }

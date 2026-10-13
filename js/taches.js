@@ -55,8 +55,11 @@ function creerInstance(modele, date) {
 
 
 // ===== Trouver des tâches =====
+// Elles sont rangées par importance seulement : une tâche cochée reste à sa place
+// (elle ne descend pas sous les autres), pour ne pas faire bouger la liste sous le doigt.
 function tachesDeLaDate(date) {
-  return donnees.taches.filter(t => t.date === date).sort(ordreTaches);
+  return donnees.taches.filter(t => t.date === date)
+    .sort((a, b) => RANG_IMPORTANCE[a.importance] - RANG_IMPORTANCE[b.importance]);
 }
 
 // Les sous-tâches qui ont leur propre date (elles apparaissent ce jour-là dans « Aujourd'hui »)
@@ -259,7 +262,7 @@ function ouvrirFicheTache(tache) {
     zoneSous.innerHTML = "";
     brouillon.sousTaches.forEach((s, i) => {
       const texte = el("input", { type: "text", value: s.titre, oninput: e => { s.titre = e.target.value; } });
-      const date = el("input", { type: "date", value: s.date || "", style: { width: "128px", flex: "none", fontSize: "13px" }, onchange: e => { s.date = e.target.value; } });
+      const date = el("input", { type: "date", value: s.date || "", style: { fontSize: "13px" }, onchange: e => { s.date = e.target.value; } });
       zoneSous.append(el("div", { class: "ligne-sous-tache" },
         el("button", { class: "case" + (s.faite ? " cochee" : ""), onclick: () => { s.faite = !s.faite; dessinerSousTaches(); } }, s.faite ? "✓" : ""),
         texte, date,

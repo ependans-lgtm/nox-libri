@@ -7,12 +7,29 @@
 // Renvoie une fonction pour la fermer.
 function ouvrirFenetre(contenu, options) {
   options = options || {};
-  const page = el("div", { class: "page fenetre" + (options.petite ? " petite" : "") + (options.classe ? " " + options.classe : "") }, contenu);
-  const voile = el("div", { class: "voile" }, page);
 
-  function fermer() {
+  // La fenêtre a deux parties : une barre fixe en haut (avec la croix pour fermer),
+  // et le corps, qui défile si le contenu est long. La croix reste donc toujours visible.
+  const corps = el("div", { class: "fenetre-corps" + (options.classe ? " " + options.classe : "") }, contenu);
+  const barre = options.petite ? null : el("div", { class: "fenetre-barre" },
+    el("button", { class: "fermer-fenetre", "aria-label": "Fermer", onclick: () => fermer() }, "✕"));
+  const page = el("div", { class: "page fenetre" + (options.petite ? " petite" : "") }, barre, corps);
+  const voile = el("div", { class: "voile" }, page);
+  let ouverte = true;
+
+  // Fermer sans toucher à l'historique (c'est ce que fait la flèche « retour » du téléphone)
+  function fermerSimplement() {
+    if (!ouverte) return;
+    ouverte = false;
     voile.remove();
     if (options.quandFerme) options.quandFerme();
+  }
+
+  // Fermer depuis l'application (la croix, un bouton, le fond sombre)
+  function fermer() {
+    if (!ouverte) return;
+    oublierRetour(fermerSimplement);
+    fermerSimplement();
   }
 
   // Toucher le fond sombre (en dehors de la page) ferme la fenêtre
@@ -20,14 +37,47 @@ function ouvrirFenetre(contenu, options) {
     if (evenement.target === voile) fermer();
   });
 
+  voile.fermerSimplement = fermerSimplement;
   document.getElementById("fenetres").append(voile);
+  retenirRetour(fermerSimplement);
   return fermer;
 }
 
-// Fermer toutes les fenêtres ouvertes
+// Fermer toutes les fenêtres ouvertes (quand on change de volet)
 function fermerToutesLesFenetres() {
-  document.getElementById("fenetres").innerHTML = "";
+  [...document.getElementById("fenetres").children].forEach(voile => {
+    oublierRetour(voile.fermerSimplement);
+    voile.remove();
+  });
 }
+
+
+// ===== La flèche « retour » du téléphone =====
+// Chaque fois qu'on ouvre quelque chose (une fiche, le lecteur…), on ajoute une étape dans
+// l'historique du navigateur. La flèche « retour » revient d'une étape : on en profite pour
+// refermer ce qui a été ouvert en dernier, au lieu de quitter l'application.
+const pileRetour = [];          // les fonctions qui referment ce qui est ouvert, dans l'ordre
+let retoursAIgnorer = 0;        // les retours qu'on a provoqués nous-mêmes
+
+function retenirRetour(refermer) {
+  pileRetour.push(refermer);
+  history.pushState({ etape: pileRetour.length }, "");
+}
+
+// On a refermé nous-mêmes (avec la croix) : on retire l'étape de l'historique
+function oublierRetour(refermer) {
+  const rang = pileRetour.lastIndexOf(refermer);
+  if (rang < 0) return;
+  pileRetour.splice(rang, 1);
+  retoursAIgnorer++;
+  history.back();
+}
+
+window.addEventListener("popstate", () => {
+  if (retoursAIgnorer > 0) { retoursAIgnorer--; return; }
+  const refermer = pileRetour.pop();
+  if (refermer) refermer();
+});
 
 // Poser une question avec plusieurs réponses possibles.
 // choix = [{ texte: "Oui", valeur: "oui", plein: true }, …]

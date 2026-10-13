@@ -1,23 +1,25 @@
 // =====================================================================
 // LE LECTEUR : ouvrir les PDF (avec PDF.js) et les EPUB (avec epub.js)
-// Ces deux outils gratuits sont chargés seulement quand on en a besoin.
+// Ces outils gratuits sont rangés dans le dossier "bibliotheques" de l'application :
+// aucun autre site n'est contacté, et la lecture fonctionne sans internet.
+// Ils sont chargés seulement quand on en a besoin (à l'ouverture du premier livre).
 // =====================================================================
 
 const OUTILS_LECTURE = {
-  pdf: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
-  pdfTravailleur: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
-  zip: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
-  epub: "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"
+  pdf: "bibliotheques/pdf.min.js",                       // PDF.js 3.11.174
+  pdfTravailleur: "bibliotheques/pdf.worker.min.js",
+  zip: "bibliotheques/jszip.min.js",                     // JSZip 3.10.1
+  epub: "bibliotheques/epub.min.js"                      // epub.js 0.3.93
 };
 
-// Charger un fichier de code depuis internet (une seule fois)
+// Charger un fichier de code (une seule fois)
 const scriptsCharges = {};
 function chargerScript(adresse) {
   if (!scriptsCharges[adresse]) {
     scriptsCharges[adresse] = new Promise((reussite, echec) => {
       const script = el("script", { src: adresse });
       script.onload = reussite;
-      script.onerror = () => echec(new Error("Impossible de charger l'outil de lecture (êtes-vous connecté à internet ?)"));
+      script.onerror = () => echec(new Error("Impossible de charger l'outil de lecture. Fermez puis rouvrez l'application."));
       document.head.append(script);
     });
   }
@@ -25,18 +27,14 @@ function chargerScript(adresse) {
 }
 
 // PDF.js a besoin d'un "travailleur" (comme Stockfish dans le jeu d'échecs).
-// Un travailleur doit venir de la même adresse que l'application : on le recopie donc dans un "blob".
+// Un travailleur doit venir de la même adresse que l'application : c'est le cas, puisqu'il est dans notre dossier.
 let pdfPret = null;
 function chargerPdfJs() {
   if (!pdfPret) {
-    pdfPret = chargerScript(OUTILS_LECTURE.pdf)
-      .then(() => fetch(OUTILS_LECTURE.pdfTravailleur))
-      .then(reponse => reponse.text())
-      .then(code => {
-        const blob = new Blob([code], { type: "text/javascript" });
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
-        return window.pdfjsLib;
-      });
+    pdfPret = chargerScript(OUTILS_LECTURE.pdf).then(() => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = OUTILS_LECTURE.pdfTravailleur;
+      return window.pdfjsLib;
+    });
   }
   return pdfPret;
 }
@@ -77,26 +75,105 @@ async function lireInfosLivre(fichier, type) {
 // ===== Ouvrir le lecteur =====
 // "cible" est facultative : la position d'une citation où aller directement
 let lectureEnCours = null;
+let carnetOuvert = null;      // la fonction qui redessine le carnet, quand il est ouvert
+
+// Les réglages de lecture (taille du texte et luminosité), gardés d'un livre à l'autre
+function reglagesLecture() {
+  if (!donnees.reglages.lecture) donnees.reglages.lecture = { taille: 100, luminosite: 100 };
+  return donnees.reglages.lecture;
+}
 
 async function ouvrirLecteur(livre, cible) {
   const lecteur = document.getElementById("lecteur");
+  const reglages = reglagesLecture();
   lecteur.innerHTML = "";
   lecteur.hidden = false;
 
   const indicateur = el("span", { class: "petit", style: { color: "var(--or)" } }, "");
   const zone = el("div", { class: "zone-lecture" }, el("p", { style: { color: "var(--parchemin)", fontStyle: "italic", marginTop: "40px" } }, "Ouverture du livre…"));
   const boutonSurligner = el("button", { class: "bouton-surligner", hidden: true }, "✎ Surligner");
+  const voileLuminosite = el("div", { class: "voile-luminosite" });
+
+  // --- Les réglages : la taille du texte et la luminosité ---
+  const affichageTaille = el("span", { style: { minWidth: "40px", textAlign: "center" } }, reglages.taille + " %");
+  function changerTaille(ecart) {
+    reglages.taille = Math.min(220, Math.max(60, reglages.taille + ecart));
+    affichageTaille.textContent = reglages.taille + " %";
+    sauverDonnees();
+    if (lectureEnCours && lectureEnCours.changerTaille) lectureEnCours.changerTaille(reglages.taille);
+  }
+  function appliquerLuminosite() {
+    // 100 % = aucun voile ; 30 % = un voile noir presque opaque
+    voileLuminosite.style.opacity = (100 - reglages.luminosite) / 100 * 0.85;
+  }
+  const curseur = el("input", { type: "range", min: 30, max: 100, step: 5, value: reglages.luminosite, "aria-label": "Luminosité",
+    oninput: e => { reglages.luminosite = Number(e.target.value); appliquerLuminosite(); },
+    onchange: () => sauverDonnees() });
+  const panneauReglages = el("div", { class: "reglages-lecture", hidden: true },
+    el("div", { class: "groupe" }, el("span", null, "Texte"),
+      el("button", { "aria-label": "Texte plus petit", onclick: () => changerTaille(-10) }, "A−"),
+      affichageTaille,
+      el("button", { "aria-label": "Texte plus grand", onclick: () => changerTaille(10) }, "A+")),
+    el("div", { class: "groupe" }, el("span", null, "☾"), curseur, el("span", null, "☀")));
+  appliquerLuminosite();
+
+  // --- Le carnet du livre : ses citations et ses notes, sans quitter la lecture ---
+  const carnet = el("div", { class: "carnet-lecture", hidden: true });
+  let ongletCarnet = "citations";
+  function dessinerCarnet() {
+    carnet.innerHTML = "";
+    const corps = el("div", { class: "corps-carnet" });
+    carnet.append(
+      el("div", { class: "entete-carnet" },
+        el("div", { class: "onglets", style: { margin: "0" } },
+          el("button", { class: ongletCarnet === "citations" ? "actif" : "", onclick: () => { ongletCarnet = "citations"; dessinerCarnet(); } }, "Citations · " + livre.citations.length),
+          el("button", { class: ongletCarnet === "notes" ? "actif" : "", onclick: () => { ongletCarnet = "notes"; dessinerCarnet(); } }, "Notes de lecture")),
+        el("button", { class: "fermer-fenetre", "aria-label": "Fermer le carnet", onclick: basculerCarnet }, "✕")),
+      corps);
+
+    if (ongletCarnet === "citations") {
+      if (!livre.citations.length) corps.append(el("p", { class: "vide" }, "Sélectionnez un passage puis touchez « Surligner » : il apparaîtra ici."));
+      [...livre.citations].sort((a, b) => (a.page || 0) - (b.page || 0)).forEach(c => corps.append(el("div", { class: "citation",
+        // Toucher une citation : on y retourne dans le livre, et le carnet se referme
+        onclick: () => { basculerCarnet(); if (lectureEnCours) lectureEnCours.allerA(c.position); } },
+        el("p", null, "« " + c.texte + " »"),
+        el("p", { class: "petit", style: { color: "var(--rubrique)" } }, (c.page ? "p. " + c.page : "") + " →"))));
+    } else {
+      const notes = el("textarea", { placeholder: "Vos impressions, vos idées, ce que ce livre vous inspire…" }, livre.notes);
+      notes.addEventListener("input", () => { livre.notes = notes.value; sauverDonnees(); });
+      corps.append(notes);
+    }
+  }
+  function basculerCarnet() {
+    carnet.hidden = !carnet.hidden;
+    boutonCarnet.classList.toggle("actif", !carnet.hidden);
+    carnetOuvert = carnet.hidden ? null : dessinerCarnet;
+    if (!carnet.hidden) dessinerCarnet();
+  }
+
+  const boutonReglages = el("button", { "aria-label": "Taille du texte et luminosité",
+    onclick: () => {
+      panneauReglages.hidden = !panneauReglages.hidden;
+      boutonReglages.classList.toggle("actif", !panneauReglages.hidden);
+      // Le panneau prend (ou rend) de la place : le livre refait sa mise en pages
+      if (lectureEnCours && lectureEnCours.ajusterTaille) lectureEnCours.ajusterTaille();
+    } }, "Aa");
+  const boutonCarnet = el("button", { "aria-label": "Citations et notes de lecture", onclick: basculerCarnet }, "❝ carnet");
 
   lecteur.append(
     el("div", { class: "barre-lecteur" },
       el("button", { onclick: fermerLecteur }, "‹ fermer"),
       el("span", { class: "titre-lecture" }, livre.titre),
-      indicateur),
-    zone,
+      indicateur, boutonReglages, boutonCarnet),
+    panneauReglages,
+    el("div", { class: "cadre-lecture" }, zone, voileLuminosite, carnet),
     el("div", { class: "barre-lecteur", style: { justifyContent: "space-between" } },
       el("button", { onclick: () => lectureEnCours && lectureEnCours.precedente() }, "‹ page précédente"),
       el("button", { onclick: () => lectureEnCours && lectureEnCours.suivante() }, "page suivante ›")),
     boutonSurligner);
+
+  // La flèche « retour » du téléphone referme le lecteur
+  retenirRetour(fermerLecteurSimplement);
 
   // Glisser le doigt vers la gauche ou la droite pour tourner la page
   let departX = null;
@@ -106,6 +183,7 @@ async function ouvrirLecteur(livre, cible) {
     const ecart = e.changedTouches[0].clientX - departX;
     departX = null;
     if (window.getSelection().toString()) return;
+    if (zone.scrollWidth > zone.clientWidth + 4) return;      // page agrandie : le doigt sert à la déplacer
     if (ecart < -60) lectureEnCours.suivante();
     if (ecart > 60) lectureEnCours.precedente();
   });
@@ -122,16 +200,24 @@ async function ouvrirLecteur(livre, cible) {
   }
 }
 
-function fermerLecteur() {
+// Fermer le lecteur sans toucher à l'historique (la flèche « retour » du téléphone)
+function fermerLecteurSimplement() {
+  const lecteur = document.getElementById("lecteur");
+  if (lecteur.hidden) return;
   if (lectureEnCours && lectureEnCours.fermer) lectureEnCours.fermer();
   lectureEnCours = null;
-  const lecteur = document.getElementById("lecteur");
+  carnetOuvert = null;
   lecteur.hidden = true;
   lecteur.innerHTML = "";
   sauverDonnees();
   rafraichir();
 }
 
+// Fermer le lecteur depuis son bouton « fermer »
+function fermerLecteur() {
+  oublierRetour(fermerLecteurSimplement);
+  fermerLecteurSimplement();
+}
 // Enregistrer une citation surlignée
 function ajouterCitation(livre, texte, page, position, rectangles) {
   texte = texte.replace(/\s+/g, " ").trim();
@@ -139,6 +225,7 @@ function ajouterCitation(livre, texte, page, position, rectangles) {
   livre.citations.push({ id: nouvelId(), texte, page, position, rectangles: rectangles || [], ajouteeLe: aujourdhui() });
   sauverDonnees();
   afficherMessage("Citation ajoutée au livre");
+  if (carnetOuvert) carnetOuvert();          // le carnet ouvert se met à jour
 }
 
 
@@ -154,7 +241,8 @@ async function lecturePdf(livre, fichier, zone, indicateur, boutonSurligner, cib
     const monRendu = ++rendu;
     const page = await pdf.getPage(numero);
     const largeurDispo = Math.min(zone.clientWidth - 20, 900);
-    const echelle = largeurDispo / page.getViewport({ scale: 1 }).width;
+    // La taille choisie dans les réglages agrandit ou rétrécit la page entière
+    const echelle = largeurDispo / page.getViewport({ scale: 1 }).width * (reglagesLecture().taille / 100);
     const vue = page.getViewport({ scale: echelle });
     const pixels = window.devicePixelRatio || 1;
 
@@ -218,6 +306,8 @@ async function lecturePdf(livre, fichier, zone, indicateur, boutonSurligner, cib
   return {
     suivante: () => { if (numero < total) { numero++; dessinerPage(); } },
     precedente: () => { if (numero > 1) { numero--; dessinerPage(); } },
+    allerA: position => { if (position && position.page) { numero = Math.min(total, Math.max(1, position.page)); dessinerPage(); } },
+    changerTaille: () => dessinerPage(),
     fermer: () => { document.removeEventListener("selectionchange", surSelection); pdf.destroy(); }
   };
 }
@@ -234,6 +324,24 @@ async function lectureEpub(livre, fichier, zone, indicateur, boutonSurligner, ci
 
   const rendu = ouvrage.renderTo(surface, { width: "100%", height: "100%", flow: "paginated", spread: "none" });
 
+  // Quand la zone de lecture change de taille (le panneau des réglages s'ouvre, le téléphone tourne…),
+  // le livre doit refaire sa mise en pages, sinon le bas du texte dépasse et se retrouve coupé.
+  let attenteTaille = null;
+  let livreAffiche = false;                   // on attend que le livre soit en place avant de toucher à sa taille
+  let derniereTaille = "";                    // la dernière taille connue de la zone ("largeur x hauteur")
+  function ajusterTaille() {
+    const taille = surface.clientWidth + "x" + surface.clientHeight;
+    if (!livreAffiche || !surface.clientWidth || !surface.clientHeight || taille === derniereTaille) return;
+    derniereTaille = taille;
+    rendu.resize(surface.clientWidth, surface.clientHeight);
+    if (positionActuelle) rendu.display(positionActuelle);       // on reste à la même page
+  }
+  const observateurTaille = new ResizeObserver(() => {
+    clearTimeout(attenteTaille);
+    attenteTaille = setTimeout(ajusterTaille, 150);
+  });
+  observateurTaille.observe(surface);
+
   // Le style des pages : le parchemin et l'encre d'Ex Libris
   const nuit = document.body.classList.contains("theme-nuit");
   rendu.themes.default({
@@ -247,7 +355,10 @@ async function lectureEpub(livre, fichier, zone, indicateur, boutonSurligner, ci
     "::selection": { background: "rgba(181, 133, 80, .5)" }
   });
   surface.style.background = nuit ? "#2C291C" : "#CCBDA9";
-  rendu.hooks.content.register(contenu => contenu.addStylesheet("https://fonts.googleapis.com/css2?family=EB+Garamond:ital@0;1&display=swap"));
+  rendu.themes.fontSize(reglagesLecture().taille + "%");
+  // Les pages du livre s'affichent dans un cadre à part : on lui donne l'adresse complète de nos polices
+  const adressePolices = new URL("css/polices.css", location.href).href;
+  rendu.hooks.content.register(contenu => contenu.addStylesheet(adressePolices));
 
   let selectionEnCours = null;
   let positionActuelle = null;
@@ -306,11 +417,20 @@ async function lectureEpub(livre, fichier, zone, indicateur, boutonSurligner, ci
 
   // Les citations déjà surlignées
   await rendu.display((cible && cible.cfi) || (livre.progression.position && livre.progression.position.cfi) || undefined);
+  derniereTaille = surface.clientWidth + "x" + surface.clientHeight;
+  livreAffiche = true;
   livre.citations.forEach(c => { if (c.position && c.position.cfi) rendu.annotations.highlight(c.position.cfi, {}, null, "surligne", { fill: "#B58550", "fill-opacity": "0.35" }); });
 
   return {
     suivante: () => rendu.next(),
     precedente: () => rendu.prev(),
-    fermer: () => ouvrage.destroy()
+    allerA: position => { if (position && position.cfi) rendu.display(position.cfi); },
+    ajusterTaille,
+    changerTaille: taille => {
+      rendu.themes.fontSize(taille + "%");
+      // Le texte a changé de taille : on réaffiche l'endroit où l'on était, pour que les pages soient recalculées
+      if (positionActuelle) rendu.display(positionActuelle);
+    },
+    fermer: () => { observateurTaille.disconnect(); clearTimeout(attenteTaille); ouvrage.destroy(); }
   };
 }

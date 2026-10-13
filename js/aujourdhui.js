@@ -22,6 +22,9 @@ function citationDuJour() {
   return toutes[numeroDuJour % toutes.length];
 }
 
+// Où en est le défilement de la liste des tâches (pour le retrouver quand on coche une tâche)
+let defilementTaches = 0;
+
 function afficherAujourdhui(conteneur) {
   genererTachesRecurrentes();
   const ajd = aujourdhui();
@@ -64,12 +67,21 @@ function afficherAujourdhui(conteneur) {
   const enRetard = tachesEnRetard();
   page.append(el("p", { class: "rubrique" }, "À faire", el("span", { class: "petit" }, compteurTaches(duJour))));
   if (!duJour.length && !sousDatees.length && !enRetard.length) page.append(el("p", { class: "vide" }, "Aucune tâche pour aujourd'hui."));
-  duJour.forEach(t => page.append(ligneTache(t)));
-  sousDatees.forEach(({ tache, sous }) => page.append(ligneSousTacheDatee(tache, sous)));
+  // Toutes les tâches sont rangées dans un cadre : s'il y en a beaucoup, c'est lui qui défile
+  const cadre = el("div", { class: "zone-defilante" });
+  duJour.forEach(t => cadre.append(ligneTache(t)));
+  sousDatees.forEach(({ tache, sous }) => cadre.append(ligneSousTacheDatee(tache, sous)));
   if (enRetard.length) {
-    page.append(el("p", { class: "rubrique", style: { fontSize: "14px" } }, "En retard"));
-    enRetard.forEach(t => page.append(ligneTache(t, { montrerDate: true })));
+    cadre.append(el("p", { class: "rubrique", style: { fontSize: "14px" } }, "En retard"));
+    enRetard.forEach(t => cadre.append(ligneTache(t, { montrerDate: true })));
   }
+  page.append(cadre);
+  // Une fois affiché : on retrouve l'endroit où on en était, et on signale s'il reste des tâches plus bas
+  requestAnimationFrame(() => {
+    cadre.scrollTop = defilementTaches;
+    cadre.classList.toggle("pleine", cadre.scrollHeight > cadre.clientHeight + 2);
+  });
+  cadre.addEventListener("scroll", () => { defilementTaches = cadre.scrollTop; });
 
   // La citation du jour
   const citation = citationDuJour();
@@ -118,7 +130,7 @@ function ouvrirReglages() {
           el("input", { type: "time", value: r.nuitFin, onchange: e => { r.nuitFin = e.target.value; sauverDonnees(); appliquerTheme(); } }))),
 
       el("p", { class: "rubrique" }, "Les rappels"),
-      el("p", { class: "petit", style: { lineHeight: "1.5" } }, "Ex Libris vous prévient avant vos rendez-vous, le matin avec le résumé du jour, et le soir s'il reste une tâche Braise. Pour l'instant, les rappels fonctionnent quand l'application a été ouverte récemment."),
+      el("p", { class: "petit", style: { lineHeight: "1.5" } }, "Nox Libri vous prévient avant vos rendez-vous, le matin avec le résumé du jour, et le soir s'il reste une tâche Braise. Pour l'instant, les rappels fonctionnent quand l'application a été ouverte récemment."),
       el("div", { class: "onglets" },
         el("button", { class: r.rappelsActifs ? "actif" : "", onclick: async () => { await activerRappels(); dessiner(); } }, r.rappelsActifs ? "Rappels activés" : "Activer les rappels"),
         r.rappelsActifs ? el("button", { onclick: () => { r.rappelsActifs = false; sauverDonnees(); dessiner(); } }, "Désactiver") : null),
@@ -142,8 +154,24 @@ function ouvrirReglages() {
             }
           } }))),
 
+      el("p", { class: "rubrique" }, "Vos données"),
+      el("p", { class: "petit", style: { lineHeight: "1.5" } }, "Tout ce que vous écrivez reste sur ce téléphone : rien n'est envoyé ailleurs. Vous pouvez tout effacer d'un coup (rendez-vous, tâches, notes, livres, réglages)."),
+      el("div", { class: "rangee-boutons", style: { justifyContent: "flex-start", marginTop: "8px" } },
+        el("button", { class: "bouton", onclick: async () => {
+          const ok = await demanderChoix("Effacer toutes vos données ?", [{ texte: "Annuler", valeur: null, discret: true }, { texte: "Tout effacer", valeur: true, plein: true }],
+            "Vos rendez-vous, tâches, listes, notes, livres, citations et réglages seront effacés de ce téléphone, définitivement. Pensez à exporter une sauvegarde avant si vous voulez en garder une copie.");
+          if (!ok) return;
+          await effacerToutesLesDonnees();
+          location.reload();                 // l'application repart de zéro
+        } }, "Effacer toutes mes données")),
+
+      el("p", { class: "rubrique" }, "À propos"),
+      el("p", { style: { lineHeight: "1.9" } },
+        el("a", { href: "confidentialite.html", style: { color: "var(--rubrique)" } }, "Politique de confidentialité"), el("br"),
+        el("a", { href: "licences.html", style: { color: "var(--rubrique)" } }, "Mentions et licences")),
+
       el("div", { class: "citation-du-jour", style: { marginTop: "30px" } },
-        el("p", null, "Ex Libris — carnet d'heures et de lectures"),
+        el("p", null, "Nox Libri — carnet d'heures et de lectures"),
         el("p", { class: "petit" }, "Audaces fortuna iuvat")));
   }
   dessiner();

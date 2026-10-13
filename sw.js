@@ -1,17 +1,31 @@
 // =====================================================================
 // LE SERVICE WORKER : un petit programme qui garde une copie de l'application
 // pour qu'elle s'ouvre même sans internet.
-// - les fichiers de l'application : on essaie internet d'abord (pour avoir la dernière version),
-//   et sinon on prend la copie gardée
-// - les polices et les outils de lecture : on garde la copie et on ne les retélécharge plus
+// - les fichiers de l'application : on donne tout de suite la copie gardée dans le téléphone
+//   (l'application s'ouvre donc instantanément, même avec un mauvais réseau), et pendant ce temps
+//   on va chercher la dernière version sur internet : elle servira à l'ouverture suivante
+// - les polices et les outils de lecture font partie de ces fichiers : aucun autre site n'est contacté
 // =====================================================================
 
-const VERSION = "ex-libris-v1";
+const VERSION = "nox-libri-v4";
 const FICHIERS_APPLICATION = [
-  "./", "index.html", "manifest.json", "css/style.css",
+  "./", "index.html", "manifest.json", "css/style.css", "css/documents.css", "confidentialite.html", "licences.html",
   "js/outils.js", "js/donnees.js", "js/fenetres.js", "js/rendezvous.js", "js/calendrier.js",
   "js/taches.js", "js/notes.js", "js/aujourdhui.js", "js/bibliotheque.js", "js/lecteur.js",
-  "js/rappels.js", "js/app.js", "icones/icone-192.png", "icones/icone-512.png"
+  "js/rappels.js", "js/app.js", "icones/icone-192.png", "icones/icone-512.png",
+  // les polices, et les outils qui affichent les livres : tout est dans l'application
+  "css/polices.css",
+  "polices/Cutive-normal-1-latin-ext.woff2",
+  "polices/Cutive-normal-2-latin.woff2",
+  "polices/EBGaramond-italic-3-latin-ext.woff2",
+  "polices/EBGaramond-italic-4-latin.woff2",
+  "polices/EBGaramond-normal-5-latin-ext.woff2",
+  "polices/EBGaramond-normal-6-latin.woff2",
+  "polices/NewsCycle-normal-10-latin.woff2",
+  "polices/NewsCycle-normal-7-latin-ext.woff2",
+  "polices/NewsCycle-normal-8-latin.woff2",
+  "polices/NewsCycle-normal-9-latin-ext.woff2",
+  "bibliotheques/pdf.min.js", "bibliotheques/pdf.worker.min.js", "bibliotheques/jszip.min.js", "bibliotheques/epub.min.js"
 ];
 
 // À l'installation : on range une copie de tous les fichiers
@@ -32,20 +46,17 @@ self.addEventListener("fetch", evenement => {
   const adresse = new URL(demande.url);
 
   if (adresse.origin === location.origin) {
-    // Nos propres fichiers : internet d'abord, la copie si on est hors ligne
-    evenement.respondWith(fetch(demande)
-      .then(reponse => {
-        const copie = reponse.clone();
-        caches.open(VERSION).then(cache => cache.put(demande, copie));
-        return reponse;
-      })
-      .catch(() => caches.match(demande).then(r => r || caches.match("index.html"))));
-  } else if (/fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net/.test(adresse.hostname)) {
-    // Les polices et les outils de lecture : la copie d'abord
-    evenement.respondWith(caches.match(demande).then(copie => copie || fetch(demande).then(reponse => {
-      const double = reponse.clone();
-      caches.open(VERSION).then(cache => cache.put(demande, double));
-      return reponse;
+    // Nos propres fichiers : la copie d'abord (c'est immédiat)…
+    evenement.respondWith(caches.open(VERSION).then(cache => cache.match(demande, { ignoreSearch: true }).then(copie => {
+      // …et, en même temps, on demande la dernière version à internet pour la prochaine ouverture
+      const miseAJour = fetch(demande, { cache: "no-cache" })
+        .then(reponse => {
+          if (reponse.ok) cache.put(demande, reponse.clone());
+          return reponse;
+        })
+        .catch(() => copie || cache.match("index.html"));
+      evenement.waitUntil(miseAJour.catch(() => {}));
+      return copie || miseAJour;       // pas encore de copie (première visite) : on attend internet
     })));
   }
 });
