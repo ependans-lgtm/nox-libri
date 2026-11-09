@@ -26,6 +26,12 @@ function chargerScript(adresse) {
   return scriptsCharges[adresse];
 }
 
+// Le réglage de sécurité pour ouvrir un PDF.
+// Cette version de PDF.js (3.11.174) a une faille connue : un PDF piégé pouvait faire exécuter du code
+// dans l'application (référence CVE-2024-4367). Interdire à PDF.js d'utiliser "eval" la bloque :
+// c'est la solution indiquée par les auteurs de PDF.js. Les PDF s'affichent exactement pareil.
+const OPTIONS_PDF_SURES = { isEvalSupported: false };
+
 // PDF.js a besoin d'un "travailleur" (comme Stockfish dans le jeu d'échecs).
 // Un travailleur doit venir de la même adresse que l'application : c'est le cas, puisqu'il est dans notre dossier.
 let pdfPret = null;
@@ -49,7 +55,7 @@ async function lireInfosLivre(fichier, type) {
   const donneesFichier = await fichier.arrayBuffer();
   if (type === "pdf") {
     const pdfjs = await chargerPdfJs();
-    const pdf = await pdfjs.getDocument({ data: donneesFichier }).promise;
+    const pdf = await pdfjs.getDocument({ data: donneesFichier, ...OPTIONS_PDF_SURES }).promise;
     let titre = "", auteur = "";
     try {
       const meta = await pdf.getMetadata();
@@ -232,7 +238,7 @@ function ajouterCitation(livre, texte, page, position, rectangles) {
 // ===== Lire un PDF =====
 async function lecturePdf(livre, fichier, zone, indicateur, boutonSurligner, cible) {
   const pdfjs = await chargerPdfJs();
-  const pdf = await pdfjs.getDocument({ data: await fichier.arrayBuffer() }).promise;
+  const pdf = await pdfjs.getDocument({ data: await fichier.arrayBuffer(), ...OPTIONS_PDF_SURES }).promise;
   const total = pdf.numPages;
   let numero = cible && cible.page ? cible.page : Math.min(Math.max(1, livre.progression.page || 1), total);
   let rendu = 0;   // pour ignorer un ancien dessin si on tourne vite les pages
